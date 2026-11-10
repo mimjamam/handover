@@ -74,7 +74,7 @@ So the system routes what resembles the past and hands over what is new. A class
 - **The guarantee is for all tickets together, not per language.** At the 5% limit, German tickets alone had 5.5% errors and English 3.0%. German is also routed less often (37.8% against 65.5%). Separate thresholds per language would fix this and are the first planned improvement.
 - **The guarantee assumes new tickets look like the calibration tickets.** If the mix changes, the threshold must be re-chosen. The handover rate is the number to watch.
 - **Past ticket texts are shown as reasons.** Fine for public data; with real customer data this needs access control.
-- **Licence.** The dataset is CC BY-NC 4.0, so this project is non-commercial.
+- **Licence of the data.** The dataset is CC BY-NC 4.0 (non-commercial). The model file `artifacts/router.joblib` contains ticket texts from it and falls under the same terms.
 
 ## Run it
 
@@ -125,3 +125,7 @@ uv run python scripts/train.py
 ## Background
 
 The abstention method follows selective classification with guaranteed risk (Geifman and El-Yaniv, 2017) and fixed-sequence testing from "Learn then Test" (Angelopoulos et al., 2021). It applies the idea of my paper *NeuroAbstain* (selective prediction for brain tumor MRI classification, ICCA 2026) to a business process.
+
+## Licence
+
+The code is released under the [MIT License](LICENSE). The dataset and the model file built from it are CC BY-NC 4.0 and may not be used commercially.
