@@ -1,0 +1,188 @@
+{
+  "created": "2026-11-10 21:49",
+  "dataset": "Tobi-Bueck/customer-support-tickets",
+  "embedding_model": "intfloat/multilingual-e5-small",
+  "neighbours": 5,
+  "novelty_gate": 0.9639,
+  "share_of_test_below_gate": 0.4007138221933809,
+  "rows": {
+    "train": 24091,
+    "validation": 4052,
+    "calibration": 5968,
+    "test": 6164
+  },
+  "classes": [
+    "Billing and Payments",
+    "Customer Service",
+    "General Inquiry",
+    "Human Resources",
+    "IT Support",
+    "Product Support",
+    "Returns and Exchanges",
+    "Sales and Pre-Sales",
+    "Service Outages and Maintenance",
+    "Technical Support"
+  ],
+  "confidence_model": {
+    "coef": [
+      -0.16537855896596168,
+      2.5172594397086034,
+      1.5667043690393818
+    ],
+    "intercept": -2.159867459637795
+  },
+  "test": {
+    "accuracy": 0.700519143413368,
+    "accuracy_de": 0.6114173228346457,
+    "accuracy_en": 0.7629690949227373,
+    "macro_f1": 0.6774385383210745,
+    "majority_class_accuracy": 0.2928293316028553,
+    "ece_raw_similarity": 0.2683594555416949,
+    "ece_confidence": 0.02133128147864975,
+    "aurc": 0.0902084572211373,
+    "aurc_if_confidence_were_random": 0.28449081308529195
+  },
+  "baselines_test": {
+    "embedding_logistic_regression": {
+      "accuracy": 0.4033095392602206,
+      "accuracy_on_novel": 0.3963886500429923
+    },
+    "tfidf_logistic_regression": {
+      "accuracy": 0.5261194029850746,
+      "accuracy_on_novel": 0.3791917454858126
+    },
+    "router_accuracy_on_novel": 0.36715391229578676,
+    "majority_class_on_novel": 0.29664660361135
+  },
+  "similarity_bands": [
+    {
+      "band": "no similar past ticket",
+      "similarity_from": 0.0,
+      "similarity_to": 0.95,
+      "share_of_tickets": 0.18867618429591174,
+      "accuracy": 0.36715391229578676,
+      "share_routed_at_default": 0.0
+    },
+    {
+      "band": "loosely similar",
+      "similarity_from": 0.95,
+      "similarity_to": 0.97,
+      "share_of_tickets": 0.30402336145360154,
+      "accuracy": 0.48932764140875135,
+      "share_routed_at_default": 0.18729989327641408
+    },
+    {
+      "band": "similar",
+      "similarity_from": 0.97,
+      "similarity_to": 0.985,
+      "share_of_tickets": 0.23767034393251135,
+      "accuracy": 0.9003412969283277,
+      "share_routed_at_default": 0.9051194539249147
+    },
+    {
+      "band": "near copy",
+      "similarity_from": 0.985,
+      "similarity_to": 1.0,
+      "share_of_tickets": 0.26963011031797535,
+      "accuracy": 0.9957882069795427,
+      "share_routed_at_default": 0.9963898916967509
+    }
+  ],
+  "default_target_risk": 0.05,
+  "delta": 0.05,
+  "default_threshold": 0.5209299871941369,
+  "operating_points": [
+    {
+      "target_risk": 0.01,
+      "threshold": 0.9376570006177921,
+      "calibration": {
+        "coverage": 0.4100201072386059,
+        "risk": 0.006129955046996322,
+        "risk_bound": 0.009423336268704672
+      },
+      "test": {
+        "coverage": 0.413530175210902,
+        "risk": 0.001569242840329541,
+        "answered": 2549
+      },
+      "promise_kept_on_test": true,
+      "test_de": {
+        "coverage": 0.25393700787401574,
+        "risk": 0.0031007751937984496
+      },
+      "test_en": {
+        "coverage": 0.5253863134657837,
+        "risk": 0.0010504201680672268
+      }
+    },
+    {
+      "target_risk": 0.02,
+      "threshold": 0.7744955962246916,
+      "calibration": {
+        "coverage": 0.4849195710455764,
+        "risk": 0.014858327574291638,
+        "risk_bound": 0.019118690267824045
+      },
+      "test": {
+        "coverage": 0.4910772225827385,
+        "risk": 0.009910802775024777,
+        "answered": 3027
+      },
+      "promise_kept_on_test": true,
+      "test_de": {
+        "coverage": 0.32677165354330706,
+        "risk": 0.012048192771084338
+      },
+      "test_en": {
+        "coverage": 0.6062362030905077,
+        "risk": 0.009103322712790168
+      }
+    },
+    {
+      "target_risk": 0.05,
+      "threshold": 0.5209299871941369,
+      "calibration": {
+        "coverage": 0.5299932975871313,
+        "risk": 0.0420486879544736,
+        "risk_bound": 0.04839957317680266
+      },
+      "test": {
+        "coverage": 0.540720311486048,
+        "risk": 0.0372037203720372,
+        "answered": 3333
+      },
+      "promise_kept_on_test": true,
+      "test_de": {
+        "coverage": 0.3783464566929134,
+        "risk": 0.055150884495317375
+      },
+      "test_en": {
+        "coverage": 0.6545253863134658,
+        "risk": 0.02993254637436762
+      }
+    },
+    {
+      "target_risk": 0.1,
+      "threshold": 0.24376485253065414,
+      "calibration": {
+        "coverage": 0.5750670241286864,
+        "risk": 0.08945221445221445,
+        "risk_bound": 0.09787267877085114
+      },
+      "test": {
+        "coverage": 0.5866320571057755,
+        "risk": 0.08517699115044247,
+        "answered": 3616
+      },
+      "promise_kept_on_test": true,
+      "test_de": {
+        "coverage": 0.4346456692913386,
+        "risk": 0.13043478260869565
+      },
+      "test_en": {
+        "coverage": 0.6931567328918322,
+        "risk": 0.06528662420382166
+      }
+    }
+  ]
+}

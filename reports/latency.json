@@ -1,0 +1,16 @@
+{
+  "requests": 300,
+  "service": "http://127.0.0.1:8000",
+  "machine": "x86_64, 8 logical CPUs",
+  "end_to_end_ms": {
+    "p50": 156.9,
+    "p95": 224.8,
+    "p99": 263.3
+  },
+  "model_only_ms": {
+    "p50": 152.3,
+    "p95": 216.9,
+    "p99": 255.5
+  },
+  "sequential_requests_per_second": 6.1
+}
