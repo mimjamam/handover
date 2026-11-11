@@ -135,3 +135,45 @@ German is weaker than English: at the 5% limit, German alone is at 5.5% errors w
 - CI has been written but has not run on GitHub yet.
 - Demo video.
 - Optional extras: LLM-drafted reply, thresholds per language, drift monitor.
+
+## Day 2 (11 Nov 2026): published, then made small enough for a free host
+
+The numbers in the sections above are from the first, full-precision model. The final numbers are at the end of this section.
+
+### Published
+
+- Code pushed to github.com/mimjamam/handover (public, MIT licence for the code; data and model file stay CC BY-NC 4.0). CI passed on the first run.
+- Hugging Face refused a Docker Space: that tier now needs a paid subscription. Render's free tier was chosen instead; it allows 512 MB of memory, and the service used 832 MB.
+
+### Slimming, measured step by step
+
+| Step | Memory of the running service |
+|---|---|
+| Start: PyTorch, Streamlit page, separate API process | 832 MB |
+| ONNX Runtime + 8-bit quantised embedding model, page served by the API (one process) | Killed at start-up under a 512 MB cap |
+| Measured where it went: `tokenizers` library about 300 MB, model session about 420 MB with that set-up | |
+| Plain SentencePiece instead of `tokenizers` (about 50 MB) | **277 MB**, stable over 300 requests under a 512 MB cap |
+
+Image size went from 3.46 GB to 751 MB.
+
+### Two problems found on the way
+
+1. **Batch-dependent vectors.** The quantised model returned slightly different vectors for the same text depending on its batch (cosine about 0.995). Training used batches, the service embeds single messages. The test "a stored ticket sent through the API finds itself" failed with similarity 0.996. Fix: embed every text on its own everywhere; new test in `tests/test_embed.py`; all embeddings recomputed (9 minutes) and the model re-evaluated.
+2. **Tokenizer swap.** SentencePiece and `tokenizers` were compared on all 40,275 cleaned tickets: identical tokens for every one, so no further recomputation was needed.
+
+### Final numbers (test set, 6,164 tickets, quantised model, one text at a time)
+
+| Error limit | Routed | Wrong among routed | German routed / wrong | English routed / wrong |
+|---|---|---|---|---|
+| 1% | 40.5% | 0.3% | 24.4% / 0.3% | 51.8% / 0.3% |
+| 2% | 47.1% | 0.8% | 30.8% / 1.3% | 58.6% / 0.7% |
+| 5% | 52.6% | 3.1% | 36.5% / 4.3% | 64.0% / 2.6% |
+| 10% | 58.1% | 8.8% | 43.7% / 14.5% | 68.2% / 6.3% |
+
+Accuracy without handover 69.6% (was 70.1% with the full-precision model). Calibration error 0.018. Novelty gate 0.965. 30 tests pass. In the container on half a CPU core: median response 283 ms, 95th percentile 304 ms.
+
+### Still open
+
+- Deployment on Render (needs the account owner to connect the repository).
+- Demo video.
+- Thresholds per language, drift monitoring, LLM-drafted replies.

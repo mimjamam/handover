@@ -24,7 +24,6 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-from sklearn.linear_model import LogisticRegression
 
 ARTIFACT_PATH = Path("artifacts/router.joblib")
 K = 5
@@ -33,15 +32,6 @@ K = 5
 def confidence_features(top_sim: np.ndarray, agreement: np.ndarray, spread: np.ndarray) -> np.ndarray:
     """Scale the three signals to similar ranges for the confidence model."""
     return np.c_[(1.0 - top_sim) * 100.0, agreement, spread * 100.0]
-
-
-def fit_confidence_model(features: np.ndarray, correct: np.ndarray) -> LogisticRegression:
-    """Learn P(proposal is right) from the three signals.
-
-    Fitted on held-out tickets, so the output is a calibrated probability
-    and not just a score.
-    """
-    return LogisticRegression(C=1.0, max_iter=2000).fit(features, correct)
 
 
 def expected_calibration_error(conf: np.ndarray, correct: np.ndarray, bins: int = 15) -> float:

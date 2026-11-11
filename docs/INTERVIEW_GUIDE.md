@@ -5,7 +5,7 @@ Questions you are likely to get, with answers that use the real results. Learn t
 ## Before any interview
 
 - [ ] Run the demo yourself and try ten messages of your own
-- [ ] Read all six files in `src/handover/` and `scripts/train.py` line by line
+- [ ] Read the five Python files in `src/handover/`, the page in `static/index.html`, and `scripts/train.py` line by line
 - [ ] Open `reports/metrics.json` and find every number quoted below
 - [ ] Change the default error limit in `scripts/train.py`, retrain, and watch which tests react
 - [ ] Explain `choose_threshold` aloud without looking
@@ -18,7 +18,7 @@ Questions you are likely to get, with answers that use the real results. Learn t
 
 **30 seconds**
 
-> I built a system that routes customer messages to the right team, in German and English. What makes it different is that it knows when it is unsure and hands those messages to a person. On held-out data, with a 5% error limit, it routes 54% of tickets automatically and is wrong on 3.7% of them; without handover it would be wrong on 30%. It runs as a tested API in Docker, and it applies the method from my paper on brain MRI classification.
+> I built a system that routes customer messages to the right team, in German and English. What makes it different is that it knows when it is unsure and hands those messages to a person. On held-out data, with a 5% error limit, it routes 53% of tickets automatically and is wrong on 3.1% of them; without handover it would be wrong on 30%. It runs as a tested API in Docker, and it applies the method from my paper on brain MRI classification.
 
 **3 minutes**
 
@@ -37,21 +37,21 @@ Questions you are likely to get, with answers that use the real results. Learn t
 Use the 3-minute pitch.
 
 **Why does abstention matter here?**
-Without it the system is wrong on 29.9% of tickets, which no support team would accept. With a 5% limit it still handles 54.1% of the volume and is wrong on 3.7% of those. The value is in separating the tickets it can be trusted with from the ones it cannot.
+Without it the system is wrong on 30.4% of tickets, which no support team would accept. With a 5% limit it still handles 52.6% of the volume and is wrong on 3.1% of those. The value is in separating the tickets it can be trusted with from the ones it cannot.
 
 **Why nearest neighbour and not a neural classifier?**
-I started with logistic regression on embeddings: 40.3%. A word-count model got 52.6%, which was suspicious. When I checked, 27% of test tickets had a near copy in the training data with the right team 99.6% of the time, and tickets with nothing similar were at 37%. The predictable signal was resemblance to past tickets, so I used it directly: 70.1%. It also means every decision can show the ticket it was matched to.
+I started with logistic regression on embeddings: 40%. A word-count model got 52.6%, which was suspicious. When I checked, about a quarter of test tickets had a near copy in the training data with the right team 99.7% of the time, and tickets with nothing similar were at 37%. The predictable signal was resemblance to past tickets, so I used it directly: 69.6%. It also means every decision can show the ticket it was matched to.
 
 **Is that not just data leakage?**
-Exact duplicates and texts with conflicting labels were removed before splitting. What remains are near-repeats, which real support queues also have: many customers report the same issue in similar words. But in this dataset the repeats come from how it was generated, so the 54% automation rate describes this dataset, not a real company. I state that in the README. On real data I would measure the repeat rate first and use a time-based split.
+Exact duplicates and texts with conflicting labels were removed before splitting. What remains are near-repeats, which real support queues also have: many customers report the same issue in similar words. But in this dataset the repeats come from how it was generated, so the 53% automation rate describes this dataset, not a real company. I state that in the README. On real data I would measure the repeat rate first and use a time-based split.
 
 **Why not fine-tune a transformer?**
-No GPU, and computing embeddings alone took 22 minutes on my CPU. More important, on tickets with nothing similar in memory, two different models both stayed under 40%, close to the 29.7% from guessing. That points to label noise, which a bigger model does not fix.
+No GPU. More important, on tickets with nothing similar in memory, two different models both stayed under 40%, close to the 29.4% from guessing. That points to label noise, which a bigger model does not fix.
 
 **What does the model do with a message it has never seen anything like?**
-It hands it over. If the closest past ticket is below 0.964 similarity, the novelty gate overrides the confidence score. I added it after the first live test: a vague German message was routed to Billing at 75% confidence. The confidence model had only seen tickets like the training data and extrapolated on short generic text. There are now tests for exactly those messages.
+It hands it over. If the closest past ticket is below 0.965 similarity, the novelty gate overrides the confidence score. I added it after the first live test: a vague German message was routed to Billing at 75% confidence. The confidence model had only seen tickets like the training data and extrapolated on short generic text. There are now tests for exactly those messages.
 
-**How did you choose 0.964?**
+**How did you choose 0.965?**
 It is the similarity at which the closest ticket becomes right more often than wrong on validation data. I fitted isotonic regression of correctness against similarity and took the point where it crosses 50%.
 
 ---
@@ -59,7 +59,7 @@ It is the similarity at which the closest ticket becomes right more often than w
 ## Method questions
 
 **What is calibration?**
-A confidence score is calibrated if, among all cases where it says 80%, about 80% are right. Raw cosine similarity is not: its calibration error was 0.27. The confidence model's is 0.021.
+A confidence score is calibrated if, among all cases where it says 80%, about 80% are right. Raw cosine similarity is not: its calibration error was 0.27. The confidence model's is 0.018.
 
 **How is your confidence computed?**
 A logistic regression on three signals: how far the closest past ticket is, how many of the five neighbours share its team, and how much the closest stands out from the fifth. It is fitted on a held-out split to predict whether the proposal is right.
@@ -71,13 +71,13 @@ With 95% probability over the draw of the calibration data, the error rate among
 On the calibration split, for each candidate threshold I count the routed tickets and the errors among them, and compute a Clopper–Pearson upper bound on the true error rate. I test thresholds from strict to lenient and stop at the first one whose bound exceeds the limit. Testing in a fixed order and stopping at the first failure keeps the overall guarantee valid even though many thresholds are tried.
 
 **What does it not guarantee?**
-Three things. It is not per group: German tickets alone had 5.5% errors at the 5% limit. It does not hold if the incoming tickets change. And it is about the average over many tickets, not about any single decision.
+Three things. It is not per group: German tickets alone had 14.5% errors at the 10% limit. It does not hold if the incoming tickets change. And it is about the average over many tickets, not about any single decision.
 
 **Why not conformal prediction?**
 That was my first plan. Standard conformal prediction outputs a set of labels and guarantees the set contains the right one. The promise a support manager needs is a limit on the error rate among automated decisions. Those are different quantities, so I used selective classification with guaranteed risk. Both belong to the same family of distribution-free methods.
 
 **What is a risk–coverage curve?**
-Sort tickets by confidence, answer the most confident first, and plot the error rate against the share answered. It shows the whole trade-off; a threshold is one point on it. The area under it is 0.090 here, against 0.284 if confidence were random.
+Sort tickets by confidence, answer the most confident first, and plot the error rate against the share answered. It shows the whole trade-off; a threshold is one point on it. The area under it is 0.095 here, against 0.295 if confidence were random.
 
 **Why four data splits?**
 Each choice made on a split makes scores on that split too optimistic. Train is the memory, validation fits the confidence model and gate, calibration chooses thresholds, test is used once. The guarantee needs the calibration data to be untouched by earlier steps.
@@ -90,16 +90,22 @@ NeuroAbstain decides when a classifier should not label an MRI scan. This decide
 ## Engineering questions
 
 **How is it deployed?**
-One Docker image with two processes: a FastAPI service and a Streamlit page that calls it over HTTP. The model is built offline into one 20 MB file and only loaded at start-up, so what runs is what was evaluated. The embedding model is downloaded at build time. *(Add the public link once it is live; until then say it runs in Docker locally.)*
+One Docker image with one process: a FastAPI service that also serves the demo page. The model is built offline into one 20 MB file and only loaded at start-up, so what runs is what was evaluated. The embedding model is downloaded at build time. It uses 277 MB of memory, which is why it fits a free host. *(Add the public link once it is live; until then say it runs in Docker locally.)*
 
 **What would you change at company scale?**
-Separate the API and the front end. Put the stored vectors in a vector index or database once the memory grows well beyond tens of thousands of tickets; today it is one matrix multiplication over 24,091 rows. Add a staging step and monitoring. Replace PyTorch with an ONNX runtime to shrink the 3.46 GB image.
+Put the stored vectors in a vector index or database once the memory grows well beyond tens of thousands of tickets; today it is one matrix multiplication over 24,091 rows. Batch requests, which needs an embedding model that is consistent across batches. Add a staging step, monitoring, and access control for the stored ticket texts.
 
 **What do your tests check?**
-27 tests in three groups. The abstention logic, including a simulation over 40 datasets that the threshold keeps its promise on new data. The API with the real model, including bad input and vague messages. And a regression test that fails if accuracy, calibration or coverage drop below recorded values or if any promised limit is broken on the test set.
+30 tests in four groups. That the embedding gives a text the same vector alone or in a group. The abstention logic, including a simulation over 40 datasets that the threshold keeps its promise on new data. The API with the real model, including bad input and vague messages. And a regression test that fails if accuracy, calibration or coverage drop below recorded values or if any promised limit is broken on the test set.
+
+**Tell me about a bug you found.**
+To fit a 512 MB host I replaced PyTorch with an 8-bit quantised version of the embedding model. One test then failed: sending a stored ticket through the API found it with similarity 0.996 instead of 1.0. The cause was that the quantised model gives a slightly different vector depending on what else is in the batch. Training had embedded tickets in batches, the service embeds one at a time, and my thresholds sit at 0.965 and 0.985, so a 0.005 difference would have meant the evaluated and the deployed system disagreed. I changed the code to embed every text on its own everywhere, added a test for it, recomputed all embeddings and re-ran the evaluation. The lesson: the numbers you report must come from exactly the code path that serves requests.
+
+**How did you get it from 832 MB to 277 MB?**
+Four changes, each measured: ONNX Runtime with a quantised model instead of PyTorch; one HTML page served by the API instead of a second Streamlit process; plain SentencePiece instead of the `tokenizers` library, which alone saved about 250 MB; and training-only libraries kept out of the image. I checked the new tokenizer gives identical tokens on all 40,275 tickets. Quantisation cost about half a point of accuracy.
 
 **How fast is it, and what does it cost?**
-Median 157 ms, 95th percentile 225 ms on a laptop CPU, almost all of it the embedding model. No GPU and no paid service, so the running cost is the host; 832 MB of memory.
+Median 283 ms, 95th percentile 304 ms in the container on half a CPU core, almost all of it the embedding model. No GPU and no paid service; 277 MB of memory, so it runs on a free host.
 
 **What happens when the data changes?**
 The guarantee no longer holds, so it must be detected. The handover rate is the cheapest signal: if incoming tickets drift away from the memory, more fall below the gate. I would track that and the similarity distribution and re-choose the threshold on fresh labelled tickets. This monitoring is not built yet.
@@ -112,19 +118,19 @@ Every handed-over ticket gets a team from a person. Adding those to the memory t
 ## Critical questions
 
 **What are the weaknesses?**
-Four. The data is machine-generated with noisy labels, so the numbers will not transfer. German is clearly worse than English and exceeds the limit on its own. It adds nothing on new kinds of ticket; it only avoids harm there. And it shows stored ticket text as the reason, which needs access control with real data.
+Four. The data is machine-generated with noisy labels, so the numbers will not transfer. German is clearly worse than English and exceeds the 10% limit on its own. It adds nothing on new kinds of ticket; it only avoids harm there. And it shows stored ticket text as the reason, which needs access control with real data.
 
 **Why is German worse?**
-I measured it but have not fully explained it. Accuracy is 61.1% for German against 76.3% for English, and German tickets have lower similarity to their closest neighbour. Likely causes are fewer German tickets in memory (about 9,900 against 14,200) and an embedding model that is stronger in English. I would test both by matching the memory sizes. Say this as it is; do not invent a cause.
+I measured it but have not fully explained it. Accuracy is 60.0% for German against 76.3% for English, and German tickets have lower similarity to their closest neighbour. Likely causes are fewer German tickets in memory (about 9,900 against 14,200) and an embedding model that is stronger in English. I would test both by matching the memory sizes. Say this as it is; do not invent a cause.
 
-**Would 54% automation hold in a real company?**
+**Would 53% automation hold in a real company?**
 I cannot claim that. It depends on how repetitive the real tickets are. What transfers is the method: measure, choose a limit, and get a threshold with a guarantee.
 
 **There is no LLM in this. Why?**
 The task did not need one, and a nearest-neighbour lookup is cheaper, faster and easier to guarantee. The evaluation approach is what carries over to LLM systems: a fixed test set, regression tests in CI, and a rule for when the system should not answer. An LLM could draft replies for the confidently routed tickets; that is not built.
 
 **What was the hardest part?**
-Accepting that the planned model did not work and finding out why, instead of tuning it. The second was the vague message that got routed at 75% confidence: the numbers on held-out data looked fine, and only trying the running system showed the problem.
+Accepting that the planned model did not work and finding out why, instead of tuning it. The second was the vague message that got routed at 75% confidence: the numbers on held-out data looked fine, and only trying the running system showed the problem. The third was a train/serve mismatch when I made the service smaller; see the next question.
 
 ---
 

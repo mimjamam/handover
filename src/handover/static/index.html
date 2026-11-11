@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handover</title>
+<style>
+  :root {
+    --bg: #fafaf8; --card: #ffffff; --text: #1f2430; --muted: #6b7280; --line: #e3e3de;
+    --accent: #8a2432; --ok-bg: #edf7f0; --ok: #14573a; --warn-bg: #fdf6df; --warn: #7a5a00;
+    --info-bg: #eef3fc; --info: #1e429f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171c; --card: #1d2027; --text: #e8e9ec; --muted: #9aa0ab; --line: #2e323b;
+      --accent: #d9596a; --ok-bg: #16301f; --ok: #8fd6ab; --warn-bg: #352c10; --warn: #e9c766;
+      --info-bg: #17243d; --info: #a9c3f5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 2.4rem; margin: 0 0 4px; letter-spacing: -0.02em; }
+  h2 { font-size: 1.3rem; margin: 40px 0 12px; }
+  p.lead { color: var(--muted); margin: 0; }
+  .small { color: var(--muted); font-size: 0.9rem; }
+  .limits { display: flex; gap: 8px; flex-wrap: wrap; }
+  .limits button { flex: 1 1 70px; padding: 10px 0; border: 1px solid var(--line); background: var(--card);
+                   color: var(--text); border-radius: 8px; font: inherit; cursor: pointer; }
+  .limits button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600;
+                                        box-shadow: inset 0 0 0 1px var(--accent); }
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0 8px; }
+  .metric { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .metric .label { color: var(--muted); font-size: 0.85rem; }
+  .metric .value { font-size: 1.7rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  select, textarea { width: 100%; font: inherit; color: var(--text); background: var(--card);
+                     border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  textarea { min-height: 150px; resize: vertical; margin-top: 10px; }
+  label { display: block; font-size: 0.9rem; color: var(--muted); margin-bottom: 6px; }
+  button.go { margin-top: 12px; background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+              padding: 11px 20px; font: inherit; font-weight: 600; cursor: pointer; }
+  button.go:disabled { opacity: 0.5; cursor: default; }
+  .box { border-radius: 10px; padding: 14px 16px; margin-top: 16px; overflow-wrap: anywhere; }
+  .route { background: var(--ok-bg); color: var(--ok); }
+  .handover { background: var(--warn-bg); color: var(--warn); }
+  .precedent { background: var(--info-bg); color: var(--info); white-space: pre-wrap; }
+  .error { background: var(--warn-bg); color: var(--warn); }
+  details { margin-top: 32px; border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; background: var(--card); }
+  summary { cursor: pointer; font-weight: 600; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
+  footer { margin-top: 32px; }
+  a { color: var(--accent); }
+  @media (max-width: 520px) { .metrics { grid-template-columns: 1fr; } h1 { font-size: 2rem; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Handover</h1>
+  <p class="lead">Routes customer messages to the right team, in German and English.
+     When it is not sure, it hands the message to a person instead of guessing.</p>
+
+  <h2>1. How many mistakes can you accept?</h2>
+  <label id="limit-label">Accepted error rate among automatically routed messages</label>
+  <div class="limits" id="limits" role="group" aria-labelledby="limit-label"></div>
+  <div class="metrics">
+    <div class="metric"><div class="label">Routed automatically</div><div class="value" id="m-coverage">–</div></div>
+    <div class="metric"><div class="label">Wrong among those</div><div class="value" id="m-risk">–</div></div>
+    <div class="metric"><div class="label">Wrong if it never handed over</div><div class="value" id="m-base">–</div></div>
+  </div>
+  <p class="small" id="measured"></p>
+
+  <h2>2. Try a message</h2>
+  <label for="example">Example (real messages from the test set, never seen by the model)</label>
+  <select id="example"><option value="">Write my own</option></select>
+  <textarea id="text" maxlength="5000" aria-label="Message" placeholder="Paste or type a customer message"></textarea>
+  <button class="go" id="go" disabled>Route message</button>
+  <div id="result" aria-live="polite"></div>
+
+  <details>
+    <summary>How it works, and its limits</summary>
+    <div id="explain"></div>
+  </details>
+
+  <footer class="small">
+    Code, method and full results: <a href="https://github.com/mimjamam/handover">github.com/mimjamam/handover</a>
+  </footer>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const pct = (x, digits = 1) => (x * 100).toFixed(digits) + "%";
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
+let info = null, target = null;
+
+function showLimit() {
+  const p = info.operating_points.find((o) => o.target_risk === target);
+  $("m-coverage").textContent = pct(p.test.coverage);
+  $("m-risk").textContent = pct(p.test.risk);
+  $("m-base").textContent = pct(1 - info.test.accuracy);
+  for (const b of $("limits").children) b.setAttribute("aria-pressed", String(Number(b.dataset.t) === target));
+}
+
+function showResult(r) {
+  const out = $("result"); out.replaceChildren();
+  const head = el("div", null, "box " + r.decision);
+  const strong = el("strong");
+  if (r.decision === "route") {
+    strong.textContent = "Send to " + r.team;
+    head.append(strong, " · " + pct(r.confidence, 0) + " confident");
+  } else if (r.reason === "no similar past ticket") {
+    strong.textContent = "Hand over to a person";
+    head.append(strong, " · nothing similar enough has been seen before");
+  } else {
+    strong.textContent = "Hand over to a person";
+    head.append(strong, " · best guess is only " + pct(r.confidence, 0) + " confident, below the " + pct(r.threshold, 0) + " needed for this setting");
+  }
+  out.append(head);
+  const why = el("p");
+  const lead = el("strong", r.reason === "no similar past ticket" ? "Closest past message" : "Why:");
+  why.append(lead, (r.reason === "no similar past ticket" ? " (not similar enough to rely on) went to " : " the most similar past message went to ")
+    + r.precedent.team + " (similarity " + r.precedent.similarity.toFixed(3) + ").");
+  out.append(why, el("div", r.precedent.text, "box precedent"));
+  const votes = r.votes.map((v) => v.team + " (" + v.neighbours + ")").join(", ");
+  out.append(el("p", "Teams of the 5 most similar past messages: " + votes + ". Answered in " + Math.round(r.latency_ms) + " ms.", "small"));
+}
+
+async function route() {
+  $("go").disabled = true; $("go").textContent = "Routing…";
+  try {
+    const res = await fetch("/route", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: $("text").value, target_risk: target }) });
+    if (!res.ok) throw new Error("The service answered with status " + res.status);
+    showResult(await res.json());
+  } catch (e) {
+    $("result").replaceChildren(el("div", "Could not route the message: " + e.message, "box error"));
+  } finally {
+    $("go").textContent = "Route message"; $("go").disabled = !$("text").value.trim();
+  }
+}
+
+function explain() {
+  const box = $("explain");
+  const ul = el("ul");
+  [
+    "The system keeps " + info.past_tickets_in_memory.toLocaleString("en") + " past messages in memory. For a new message it finds the most similar ones and proposes the team of the closest.",
+    "It then estimates the chance that this proposal is right, and answers only if that chance is above a threshold. The threshold is chosen on held-out data so the error rate among routed messages stays under the accepted level.",
+    "It can only route what resembles something seen before. New kinds of message go to a person. That is the intended behaviour, and the table shows why.",
+  ].forEach((t) => ul.append(el("li", t)));
+  const table = el("table"); const head = el("tr");
+  ["Closest past message", "Share of messages", "Proposal correct"].forEach((h) => head.append(el("th", h)));
+  table.append(head);
+  info.similarity_bands.forEach((b) => { const tr = el("tr");
+    [b.band, pct(b.share_of_tickets), pct(b.accuracy)].forEach((c) => tr.append(el("td", c))); table.append(tr); });
+  const wrap = el("div", null, "scroll"); wrap.append(table);
+  const ul2 = el("ul");
+  [
+    "Without handover the proposal is right " + pct(info.test.accuracy, 0) + " of the time (German " + pct(info.test.accuracy_de, 0) + ", English " + pct(info.test.accuracy_en, 0) + ").",
+    "The error limit holds for all messages together, not for each language separately. German is the weaker language here.",
+    "The data is a public, machine-generated ticket set (CC BY-NC 4.0, non-commercial) with many near-repeated messages. A real company's repeat rate decides how much could be automated there.",
+  ].forEach((t) => ul2.append(el("li", t)));
+  box.append(ul, wrap, ul2);
+}
+
+async function start() {
+  try {
+    info = await (await fetch("/info")).json();
+  } catch (e) {
+    $("result").replaceChildren(el("div", "The service is starting. Reload the page in a few seconds.", "box error"));
+    return;
+  }
+  const points = info.operating_points.filter((o) => o.threshold !== null);
+  target = points.some((o) => o.target_risk === info.default_target_risk) ? info.default_target_risk : points[0].target_risk;
+  points.forEach((o) => { const b = el("button", pct(o.target_risk, 0)); b.dataset.t = o.target_risk; b.type = "button";
+    b.onclick = () => { target = o.target_risk; showLimit(); }; $("limits").append(b); });
+  showLimit();
+  $("measured").textContent = "Measured on " + info.rows.test.toLocaleString("en") + " test messages the model never saw. The rest go to a person.";
+  const examples = [...info.examples, { label: "DE · Unklare Nachricht", text: "Hallo, es funktioniert nicht. Können Sie mir bitte helfen?" }];
+  examples.forEach((ex, i) => { const o = el("option", ex.label); o.value = String(i); $("example").append(o); });
+  $("example").onchange = () => { const i = $("example").value; $("text").value = i === "" ? "" : examples[Number(i)].text;
+    $("go").disabled = !$("text").value.trim(); $("result").replaceChildren(); };
+  $("text").oninput = () => { $("go").disabled = !$("text").value.trim(); };
+  $("go").onclick = route;
+  explain();
+}
+start();
+</script>
+</body>
+</html>

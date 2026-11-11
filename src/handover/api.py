@@ -1,6 +1,6 @@
 """HTTP service: send a ticket, get a team or a handover decision.
 
-Run:  uv run uvicorn handover.api:app --port 8000
+Run:  uv run uvicorn handover.api:app --port 8000   (then open http://localhost:8000)
 """
 
 from __future__ import annotations
@@ -11,12 +11,14 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from handover.embed import MODEL_NAME, embed
 from handover.model import ARTIFACT_PATH, Router
 
 MAX_CHARS = 5000
+PAGE = Path(__file__).parent / "static" / "index.html"
 PRECEDENT_CHARS = 600
 state: dict = {}
 
@@ -79,6 +81,12 @@ def _threshold_for(router: Router, target_risk: float | None) -> tuple[float, fl
     if key not in points:
         raise HTTPException(422, f"target_risk must be one of {sorted(float(k) for k in points)}")
     return points[key], target_risk
+
+
+@app.get("/", include_in_schema=False)
+def page() -> FileResponse:
+    """The demo page. It calls /info and /route from the browser."""
+    return FileResponse(PAGE, media_type="text/html")
 
 
 @app.get("/health")

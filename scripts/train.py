@@ -33,7 +33,6 @@ from handover.model import (
     Router,
     confidence_features,
     expected_calibration_error,
-    fit_confidence_model,
 )
 
 EMB_PATH = Path("data/embeddings.npy")
@@ -48,6 +47,15 @@ BANDS = [
     (0.97, 0.985, "similar"),
     (0.985, 1.01, "near copy"),
 ]
+
+
+def fit_confidence_model(features: np.ndarray, correct: np.ndarray) -> LogisticRegression:
+    """Learn P(proposal is right) from the three signals.
+
+    Fitted on held-out tickets, so the output is a calibrated probability
+    and not just a score.
+    """
+    return LogisticRegression(C=1.0, max_iter=2000).fit(features, correct)
 
 
 def get_embeddings(texts: list[str]) -> np.ndarray:

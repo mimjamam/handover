@@ -1,0 +1,8 @@
+# Render blueprint: one free web service built from the Dockerfile.
+services:
+  - type: web
+    name: handover
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true

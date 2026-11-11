@@ -16,6 +16,13 @@ def test_health(client):
     assert client.get("/health").json() == {"status": "ok", "model_loaded": True}
 
 
+def test_demo_page_is_served(client):
+    r = client.get("/")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Handover" in r.text
+
+
 def test_info_lists_teams_and_settings(client):
     info = client.get("/info").json()
     assert len(info["teams"]) == 10
